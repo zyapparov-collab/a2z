@@ -3,7 +3,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils import executor
 
-API_TOKEN = "7573096534:AAHEl8zlfTem0eXRQJdhnfvcrZfguG7OL7k"  # получите у @BotFather
+API_TOKEN = os.getenv("TELEGRAM_TOKEN")  # получите у @BotFather
 
 logging.basicConfig(level=logging.INFO)
 
