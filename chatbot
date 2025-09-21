@@ -1,0 +1,57 @@
+import logging
+from aiogram import Bot, Dispatcher, types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils import executor
+
+API_TOKEN = "ВАШ_ТОКЕН_ОТ_БОТА"  # получите у @BotFather
+
+logging.basicConfig(level=logging.INFO)
+
+bot = Bot(token=API_TOKEN)
+dp = Dispatcher(bot)
+
+# Клавиатуры
+kb_person_type = ReplyKeyboardMarkup(resize_keyboard=True)
+kb_person_type.add(KeyboardButton("Частное лицо"), KeyboardButton("Компания"))
+
+kb_request_type = ReplyKeyboardMarkup(resize_keyboard=True)
+kb_request_type.add(KeyboardButton("Оценка перевода"), KeyboardButton("Партнёрство"), KeyboardButton("Другое"))
+
+user_data = {}
+
+@dp.message_handler(commands=['start'])
+async def send_welcome(message: types.Message):
+    user_id = message.from_user.id
+    user_data[user_id] = {}
+    await message.answer("Здравствуйте! Добро пожаловать в наше бюро переводов.\nКак Вас зовут? (Имя и фамилия)")
+
+@dp.message_handler(lambda m: user_data.get(m.from_user.id) is not None and "name" not in user_data[m.from_user.id])
+async def get_name(message: types.Message):
+    user_id = message.from_user.id
+    user_data[user_id]["name"] = message.text
+    await message.answer("Вы представляете частное лицо или компанию?", reply_markup=kb_person_type)
+
+@dp.message_handler(lambda m: user_data.get(m.from_user.id) and "person_type" not in user_data[m.from_user.id] and m.text in ["Частное лицо", "Компания"])
+async def get_person_type(message: types.Message):
+    user_id = message.from_user.id
+    user_data[user_id]["person_type"] = message.text
+    await message.answer("Какой у Вас вопрос?\nВыберите один из вариантов:", reply_markup=kb_request_type)
+
+@dp.message_handler(lambda m: user_data.get(m.from_user.id) and "request_type" not in user_data[m.from_user.id] and m.text in ["Оценка перевода", "Партнёрство", "Другое"])
+async def get_request_type(message: types.Message):
+    user_id = message.from_user.id
+    user_data[user_id]["request_type"] = message.text
+    if message.text == "Оценка перевода":
+        await message.answer("Пожалуйста, пришлите текст или файл для перевода. Мы скоро пришлём оценку стоимости и времени выполнения.")
+    else:
+        await message.answer("Пожалуйста, изложите суть Вашего вопроса, мы скоро ответим.")
+
+@dp.message_handler(lambda m: user_data.get(m.from_user.id) and "extra" not in user_data[m.from_user.id] and "request_type" in user_data[m.from_user.id])
+async def get_extra(message: types.Message):
+    user_id = message.from_user.id
+    if "details" not in user_data[user_id]:
+        user_data[user_id]["details"] = message.text
+        await message.answer("Есть ли ещё какие-либо пожелания?")
+    else:
+        user_data[user_id]["extra"] = message.text
+        await message.answer("Спасибо! Мы свяжемся с Вами в ближайшее время.")
